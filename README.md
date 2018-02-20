@@ -109,35 +109,76 @@ const libp2p = require('libp2p')
 const TCP = require('libp2p-tcp')
 const WS = require('libp2p-websockets')
 const spdy = require('libp2p-spdy')
+const mplex = require('libp2p-mplex')
 const secio = require('libp2p-secio')
 const MulticastDNS = require('libp2p-mdns')
 const DHT = require('libp2p-kad-dht')
 
 class Node extends libp2p {
-  constructor (peerInfo, peerBook, options) {
-    options = options || {}
-
-    const modules = {
-      transport: [
-        new TCP(),
-        new WS()
-      ],
-      connection: {
-        muxer: [
+  constructor (_peerInfo, _peerBook, _options) {
+    const options = {
+      peerInfo: _peerInfo             // The Identity of your Peer
+      peerBook: _peerBook             // Where peers get tracked, if undefined libp2p will create one instance
+      modules: {
+        transport: [
+          new TCP(),
+          new WS()
+        ],
+        streamMuxer: [
           spdy
         ],
-        crypto: [
+        cryptoComm: [
           secio
         ]
+        peerDiscovery: [
+          new MulticastDNS(peerInfo)
+        ],
+        peerRouting: {},              // Currently both peerRouting and contentRouting are patched through the DHT,
+        contentRouting: {}            // this will change once we factor that into two modules, for now do the following line:
+        dht: DHT                      // DHT enables PeerRouting, ContentRouting and DHT itself components
       },
-      discovery: [
-        new MulticastDNS(peerInfo)
-      ],
-      // DHT is passed as its own enabling PeerRouting, ContentRouting and DHT itself components
-      dht: DHT
+      config: {                       // The config object is the part of the config that can go into a file, config.json.
+        addrs: {                      // Multiaddrs
+          listen: []                  // To listen
+          ann: []                     // To announce/share with the network (i.e DNS addr)
+          notAnn: []                  // To keep private
+        },
+        peerDiscovery: {
+          mdns: {                     // mdns options
+            interval: 1000            // ms
+            enabled: true
+          },
+          webrtc-star: {              // webrtc-star options
+            interval: 1000            // ms
+            enabled: false
+          }
+          // .. other discovery module options.
+        },
+        peerRouting: {},
+        contentRouting: {},
+        protocolMuxing: {             // Protocol muxing sequence. libp2p uses sane defaults (below). You can override these with:
+          transport: {
+            secio: {
+              spdy: {
+                '*': '*'
+              },
+              mplex: {
+                '*': '*'
+              }
+            }
+          }
+        }
+      },
+      EXPERIMENTAL: {                 // Experimental features ("behind a flag")
+        pubsub: true,
+        dht: true
+      }
     }
 
-    super(modules, peerInfo, peerBook, options)
+    // overload any defaults of your bundle
+    Object.assign(options, _options)
+
+    super(options)
   }
 }
 

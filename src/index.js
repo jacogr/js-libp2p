@@ -23,8 +23,12 @@ exports = module.exports
 const NOT_STARTED_ERROR_MESSAGE = 'The libp2p node is not started yet'
 
 class Node extends EventEmitter {
-  constructor (_modules, _peerInfo, _peerBook, _options) {
+  constructor (_options) {
     super()
+    const _peerInfo = _options.peerInfo
+    const _peerBook = _options.peerBook
+    const _modules = _options.modules
+
     assert(_modules, 'requires modules to equip libp2p with features')
     assert(_peerInfo, 'requires a PeerInfo instance')
 
