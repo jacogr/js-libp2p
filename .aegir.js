@@ -56,11 +56,11 @@ const before = (done) => {
 }
 
 const after = (done) => {
-  setTimeout(() => parallel(
-    [node, wrtcRendezvous, wsRendezvous].map((s) => {
-      return (cb) => s.stop(cb)
-    })
-   , done), 2000)
+  setTimeout(() =>
+    parallel(
+      [node, wrtcRendezvous, wsRendezvous].map((s) => (cb) => s.stop(cb)),
+      done),
+  2000)
 }
 
 module.exports = {

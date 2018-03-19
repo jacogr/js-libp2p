@@ -101,54 +101,60 @@ libp2p becomes very simple and basically acts as a glue for every module that co
 ```JavaScript
 // Creating a bundle that adds:
 //   transport: websockets + tcp
-//   stream-muxing: SPDY
+//   stream-muxing: spdy & mplex
 //   crypto-channel: secio
 //   discovery: multicast-dns
 
 const libp2p = require('libp2p')
 const TCP = require('libp2p-tcp')
 const WS = require('libp2p-websockets')
-const spdy = require('libp2p-spdy')
-const mplex = require('libp2p-mplex')
-const secio = require('libp2p-secio')
+const SPDY = require('libp2p-spdy')
+const MPLEX = require('libp2p-mplex')
+const SECIO = require('libp2p-secio')
 const MulticastDNS = require('libp2p-mdns')
 const DHT = require('libp2p-kad-dht')
+const defaultsDeep = require('lodash.defaultsdeep')
 
 class Node extends libp2p {
   constructor (_peerInfo, _peerBook, _options) {
-    const options = {
+    const defaults = {
       peerInfo: _peerInfo             // The Identity of your Peer
-      peerBook: _peerBook             // Where peers get tracked, if undefined libp2p will create one instance
+      peerBook: _peerBook,            // Where peers get tracked, if undefined libp2p will create one instance
+
+      // The libp2p modules for this libp2p bundle
       modules: {
         transport: [
-          new TCP(),
-          new WS()
+          TCP,
+          new WS()                    // It can take instances too!
         ],
         streamMuxer: [
-          spdy
+          SPDY,
+          MPLEX
         ],
-        cryptoComm: [
-          secio
+        connEncryption: [
+          SECIO
         ]
         peerDiscovery: [
-          new MulticastDNS(peerInfo)
+          MulticastDNS
         ],
         peerRouting: {},              // Currently both peerRouting and contentRouting are patched through the DHT,
         contentRouting: {}            // this will change once we factor that into two modules, for now do the following line:
         dht: DHT                      // DHT enables PeerRouting, ContentRouting and DHT itself components
       },
+
+      // libp2p config options (typically found on a config.json)
       config: {                       // The config object is the part of the config that can go into a file, config.json.
-        addrs: {                      // Multiaddrs
-          listen: []                  // To listen
-          ann: []                     // To announce/share with the network (i.e DNS addr)
-          notAnn: []                  // To keep private
+        addresses: {                  // Multiaddrs
+          listen: []                  // To start transport listener
+          announce: []                // To announce/share with the network (i.e DNS addr)
+          noAnnounce: []              // To keep private
         },
         peerDiscovery: {
           mdns: {                     // mdns options
             interval: 1000            // ms
             enabled: true
           },
-          webrtc-star: {              // webrtc-star options
+          webrtcStar: {               // webrtc-star options
             interval: 1000            // ms
             enabled: false
           }
@@ -159,30 +165,27 @@ class Node extends libp2p {
         protocolMuxing: {             // Protocol muxing sequence. libp2p uses sane defaults (below). You can override these with:
           transport: {
             secio: {
-              spdy: {
-                '*': '*'
-              },
-              mplex: {
-                '*': '*'
-              }
+              spdy: '*',              // '*' means, from this point forward, accept any protocol
+              mplex: '*'
             }
           }
         }
+        // Enable/Disable Experimental features
+        EXPERIMENTAL: {                 // Experimental features ("behind a flag")
+          pubsub: true,
+          dht: true
+        }
       },
-      EXPERIMENTAL: {                 // Experimental features ("behind a flag")
-        pubsub: true,
-        dht: true
-      }
     }
 
-    // overload any defaults of your bundle
-    Object.assign(options, _options)
+    // overload any defaults of your bundle using https://lodash.com/docs/4.17.5#defaultsDeep
+    defaultsDeep(_options, defaults)
 
     super(options)
   }
 }
 
-// Now all the nodes you create, will have TCP, WebSockets, SPDY, SECIO and MulticastDNS support.
+// Now all the nodes you create, will have TCP, WebSockets, SPDY, MPLEX, SECIO and MulticastDNS support.
 ```
 
 ### API
