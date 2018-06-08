@@ -13,9 +13,7 @@ const libp2p = require('../..')
 
 function mapMuxers (list) {
   return list.map((pref) => {
-    if (typeof pref !== 'string') {
-      return pref
-    }
+    if (typeof pref !== 'string') { return pref }
     switch (pref.trim().toLowerCase()) {
       case 'spdy': return SPDY
       case 'mplex': return MPLEX

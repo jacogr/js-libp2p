@@ -152,10 +152,19 @@ class Node extends EventEmitter {
         // all transports need to be setup before discover starts
         if (this._modules.peerDiscovery && this._config.peerDiscovery) {
           each(this._modules.peerDiscovery, (D, cb) => {
+            console.log('Discovery Tag', D.tag)
+
             // If enabled then start it
             if (this._config.peerDiscovery[D.tag].enabled) {
               this._config.peerDiscovery[D.tag].peerInfo = this.peerInfo
-              const d = new D(this._config.peerDiscovery[D.tag])
+
+              let d
+
+              if (typeof D === 'function') {
+                d = new D(this._config.peerDiscovery[D.tag])
+              } else {
+                d = D
+              }
 
               d.on('peer', (peerInfo) => this.emit('peer:discovery', peerInfo))
               d.start(cb)
